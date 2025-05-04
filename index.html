@@ -1,0 +1,703 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Grow@Home: AI-powered gardening assistant to grow organic food at home with AR previews and personalized plans.">
+    <meta name="keywords" content="gardening, AI, augmented reality, organic food, home gardening">
+    <meta name="author" content="Grow@Home Team">
+    <title>Grow@Home - AI-Powered Gardening Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7FAFC;
+            color: #1A202C;
+            line-height: 1.7;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #9AE6B4, #276749);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.25), transparent);
+            opacity: 0.4;
+        }
+        .section-padding {
+            padding: 5rem 1.5rem;
+        }
+        .parallax {
+            background-attachment: fixed;
+            background-position: center;
+            background-size: cover;
+        }
+        .feature-card, .kit-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+        }
+        .feature-card:hover, .kit-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+        }
+        .carousel {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 1.5rem;
+        }
+        .carousel::-webkit-scrollbar {
+            display: none;
+        }
+        .carousel-item {
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+            margin-right: 1.5rem;
+        }
+        .rounded-soft {
+            border-radius: 1.25rem;
+        }
+        .cta-button {
+            background: linear-gradient(90deg, #38A169, #9AE6B4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+        .cta-button:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        .secondary-button {
+            border: 2px solid #38A169;
+            color: #38A169;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .secondary-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(56, 161, 105, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+        .secondary-button:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+        .secondary-button:hover {
+            background-color: #38A169;
+            color: #FFFFFF;
+            transform: scale(1.05);
+        }
+        .icon-container {
+            background: #E6FFFA;
+            padding: 1rem;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        model-viewer {
+            width: 100%;
+            height: 400px;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            background: linear-gradient(to right, #9AE6B4, #38A169);
+            background-clip: padding-box;
+            --poster-color: transparent;
+        }
+        .download-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+        .glow-text {
+            text-shadow: 0 0 8px rgba(56, 161, 105, 0.6);
+            transition: text-shadow 0.3s ease;
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease, transform 0.2s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #38A169;
+            transform: scale(1.05);
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #38A169;
+        }
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        .stagger {
+            animation-delay: calc(0.08s * var(--i));
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #38A169, #9AE6B4);
+            transition: width 0.1s linear;
+        }
+        .model-controls {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .model-controls button {
+            font-size: 0.875rem;
+            padding: 0.5rem 1.25rem;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .model-controls button:hover {
+            background-color: #E6FFFA;
+            transform: scale(1.05);
+        }
+        .hamburger {
+            display: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2xl;
+            }
+            h2 {
+                font-size: 1.75rem;
+            }
+            .section-padding {
+                padding: 2.5rem 1rem;
+            }
+            .download-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            model-viewer {
+                height: 300px;
+            }
+            .logo {
+                height: 32px;
+            }
+            .hamburger {
+                display: block;
+                cursor: pointer;
+            }
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 64px;
+                left: 0;
+                right: 0;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                padding: 1rem;
+                animation: slideIn 0.3s ease-out;
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            @keyframes slideIn {
+                from {
+                    transform: translateY(-10px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            .grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar py-4 px-6">
+        <div class="container mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center space-x-2">
+                <img src="https://raw.githubusercontent.com/purnavenkat777/Grow-home/main/logo.png" alt="Grow@Home Logo" class="logo">
+                <span class="text-lg font-semibold text-green-800 glow-text">Grow@Home</span>
+            </a>
+            <div class="hamburger md:hidden">
+                <i class="fas fa-bars text-2xl text-green-800"></i>
+            </div>
+            <div class="nav-links md:flex">
+                <a href="#about" class="nav-link text-green-800">About</a>
+                <a href="#features" class="nav-link text-green-800">Features</a>
+                <a href="#download" class="nav-link text-green-800">Download</a>
+                <a href="#gallery" class="nav-link text-green-800">Gallery</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg text-white text-center section-padding relative fade-in">
+        <div class="absolute inset-0 bg-green-900 opacity-40"></div>
+        <div class="relative z-10 container mx-auto">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight text-shadow-lg">Grow Organic Food at Home with Ease</h1>
+            <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">Let AI guide your gardening journey – from seed to harvest.</p>
+            <div class="relative">
+                <model-viewer 
+                    src="https://raw.githubusercontent.com/purnavenkat777/Grow-Home./main/agave_sisalana_plant.glb" 
+                    alt="3D Agave Sisalana Plant Model" 
+                    camera-controls 
+                    auto-rotate 
+                    ar 
+                    ar-modes="webxr scene-viewer quick-look"
+                    environment-image="neutral"
+                    shadow-intensity="1"
+                    aria-label="3D model of an agave sisalana plant for augmented reality preview">
+                    <!-- Add ios-src for iOS AR: ios-src="https://your-hosting-service.com/AgaveSisalana.usdz" -->
+                    <!-- Add poster for loading: poster="https://your-hosting-service.com/AgaveSisalana.jpg" -->
+                    <div slot="poster" class="text-center text-gray-200">Loading 3D agave plant model...</div>
+                    <div slot="progress-bar" class="progress-bar"></div>
+                </model-viewer>
+                <div class="model-controls">
+                    <button id="toggle-rotate" class="secondary-button rounded-soft">Pause Rotation</button>
+                    <button id="toggle-lighting" class="secondary-button rounded-soft">Toggle Lighting</button>
+                </div>
+                <p id="ar-error" class="text-red-300 mt-2 hidden">AR is not supported on this device. View the 3D model instead.</p>
+            </div>
+            <div class="space-x-4 mt-8">
+                <a href="https://v0-grow-home-onboarding.vercel.app/" class="cta-button text-white font-semibold py-4 px-8 rounded-soft inline-block min-w-40">Try Web App</a>
+                <a href="#download" class="cta-button text-white font-semibold py-4 px-8 rounded-soft inline-block min-w-40">Get Started</a>
+                <a href="#demo" class="secondary-button font-semibold py-4 px-8 rounded-soft inline-block min-w-40">Watch Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="bg-white section-padding fade-in parallax" style="background-image: url('https://images.unsplash.com/photo-1516257984-b91b096158f9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');">
+        <div class="container mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-12 text-green-800">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-6 feature-card rounded-soft stagger" style="--i: 1">
+                    <div class="icon-container mb-6">
+                        <i class="fas fa-seedling text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl md:text-2xl font-semibold mb-4">Personalized Setup</h3>
+                    <p class="text-gray-600">Answer a few simple questions to start your gardening journey.</p>
+                </div>
+                <div class="p-6 feature-card rounded-soft stagger" style="--i: 2">
+                    <div class="icon-container mb-6">
+                        <i class="fas fa-tools text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl md:text-2xl font-semibold mb-4">Smart Recommendations</h3>
+                    <p class="text-gray-600">Get seeds, tools & kits matched to your space.</p>
+                </div>
+                <div class="p-6 feature-card rounded-soft stagger" style="--i: 3">
+                    <div class="icon-container mb-6">
+                        <i class="fas fa-mobile-alt text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl md:text-2xl font-semibold mb-4">AR Preview & Daily Tasks</h3>
+                    <p class="text-gray-600">Visualize your garden and follow daily care tips.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="bg-gray-50 section-padding fade-in parallax" style="background-image: url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-green-800">Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 1">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-leaf text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">AI-Based Garden Plans</h3>
+                        <p class="text-gray-600">Tailored plans for your space and climate.</p>
+                    </div>
+                </div>
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 2">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-vr-cardboard text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">AR Garden Layout Visualization</h3>
+                        <p class="text-gray-600">Preview your garden in augmented reality.</p>
+                    </div>
+                </div>
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 3">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-calendar-alt text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">Smart Harvest Calendar</h3>
+                        <p class="text-gray-600">Know exactly when to harvest.</p>
+                    </div>
+                </div>
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 4">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-tasks text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">Task System with Photo Verification</h3>
+                        <p class="text-gray-600">Track progress with photo uploads.</p>
+                    </div>
+                </div>
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 5">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-gift text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">Green Points & Rewards</h3>
+                        <p class="text-gray-600">Earn points for gardening milestones.</p>
+                    </div>
+                </div>
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 6">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-store text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">Local Store Finder</h3>
+                        <p class="text-gray-600">Find nearby gardening stores.</p>
+                    </div>
+                </div>
+                <div class="feature-card p-6 rounded-soft stagger" style="--i: 7">
+                    <div class="icon-container mr-4">
+                        <i class="fas fa-user-md text-2xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg md:text-xl font-semibold mb-2">Chat with Garden Doctor</h3>
+                        <p class="text-gray-600">Get expert advice anytime.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Starter Kits & Tools -->
+    <section class="bg-white section-padding fade-in parallax" style="background-image: url('https://images.unsplash.com/photo-1553034599-366e1d3d6b60?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-green-800">Starter Kits & Tools</h2>
+            <div class="carousel">
+                <div class="carousel-item kit-card bg-gray-50 p-6 rounded-soft w-80 stagger" style="--i: 1">
+                    <div class="icon-container mb-6">
+                        <i class="fas fa-seedling text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-semibold mb-3">Beginner Garden Kit</h3>
+                    <p class="text-gray-600 mb-4">Everything you need to start growing.</p>
+                    <a href="#buy" class="cta-button text-white font-semibold py-3 px-6 rounded-soft inline-block">Buy Now</a>
+                </div>
+                <div class="carousel-item kit-card bg-gray-50 p-6 rounded-soft w-80 stagger" style="--i: 2">
+                    <div class="icon-container mb-6">
+                        <i class="fas fa-tools text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-semibold mb-3">Gardening Tools Set</h3>
+                    <p class="text-gray-600 mb-4">High-quality tools for easy gardening.</p>
+                    <a href="#buy" class="cta-button text-white font-semibold py-3 px-6 rounded-soft inline-block">Buy Now</a>
+                </div>
+                <div class="carousel-item kit-card bg-gray-50 p-6 rounded-soft w-80 stagger" style="--i: 3">
+                    <div class="icon-container mb-6">
+                        <i class="fas fa-leaf text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-semibold mb-3">Organic Fertilizer</h3>
+                    <p class="text-gray-600 mb-4">Nourish your plants naturally.</p>
+                    <a href="#buy" class="cta-button text-white font-semibold py-3 px-6 rounded-soft inline-block">Buy Now</a>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <a href="#stores" class="secondary-button font-semibold py-3 px-6 rounded-soft inline-block min-w-40">Find Nearby Stores</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Gallery -->
+    <section id="gallery" class="bg-gray-50 section-padding fade-in parallax" style="background-image: url('https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-green-800">Community Gallery</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-soft stagger" style="--i: 1">
+                    <div class="icon-container mb-4">
+                        <i class="fas fa-camera text-3xl text-green-600"></i>
+                    </div>
+                    <p class="text-gray-600">Priya’s Balcony Garden</p>
+                </div>
+                <div class="bg-white p-6 rounded-soft stagger" style="--i: 2">
+                    <div class="icon-container mb-4">
+                        <i class="fas fa-camera text-3xl text-green-600"></i>
+                    </div>
+                    <p class="text-gray-600">Anil’s Rooftop Harvest</p>
+                </div>
+                <div class="bg-white p-6 rounded-soft stagger" style="--i: 3">
+                    <div class="icon-container mb-4">
+                        <i class="fas fa-camera text-3xl text-green-600"></i>
+                    </div>
+                    <p class="text-gray-600">Sneha’s Herb Corner</p>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <a href="#upload" class="cta-button text-white font-semibold py-3 px-6 rounded-soft inline-block min-w-40">Join the Gallery</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Grow@Home -->
+    <section id="download" class="bg-white section-padding fade-in parallax" style="background-image: url('https://images.unsplash.com/photo-1536147116438-62679a5e01f2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');">
+        <div class="container mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-12 text-green-800">Get Grow@Home</h2>
+            <div class="flex flex-col items-center justify-center">
+                <div class="icon-container mb-8">
+                    <i class="fas fa-mobile-alt text-5xl text-green-600"></i>
+                </div>
+                <div class="download-buttons">
+                    <a href="https://v0-grow-home-onboarding.vercel.app/" class="cta-button text-white font-semibold py-4 px-8 rounded-soft inline-block min-w-40">Try Web App</a>
+                    <a href="https://drive.google.com/file/d/1z96G6AOeGWFjta5adaOKw4wQZurIkuad/view?usp=sharing" class="cta-button text-white font-semibold py-4 px-8 rounded-soft inline-block min-w-40">Download for Android</a>
+                    <a href="#ios" class="secondary-button font-semibold py-4 px-8 rounded-soft inline-block min-w-40">Coming Soon on iOS</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-green-800 text-white section-padding fade-in">
+        <div class="container mx-auto text-center">
+            <p class="mb-6">Contact: <a href="mailto:grow-at-home@outlook.com" class="underline hover:text-green-300">grow-at-home@outlook.com</a></p>
+            <div class="flex justify-center space-x-6 mb-6">
+                <a href="#about" class="hover:text-green-300">About</a>
+                <a href="#faq" class="hover:text-green-300">FAQ</a>
+                <a href="#blog" class="hover:text-green-300">Blog</a>
+                <a href="#privacy" class="hover:text-green-300">Privacy Policy</a>
+            </div>
+            <div class="flex justify-center space-x-8">
+                <a href="#instagram" aria-label="Instagram"><i class="fab fa-instagram text-2xl hover:text-green-300"></i></a>
+                <a href="#youtube" aria-label="YouTube"><i class="fab fa-youtube text-2xl hover:text-green-300"></i></a>
+                <a href="#facebook" aria-label="Facebook"><i class="fab fa-facebook text-2xl hover:text-green-300"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Hamburger menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navLinks = document.querySelector('.nav-links');
+        hamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        // Active nav link highlighting
+        const navLinksItems = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('section');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (window.scrollY >= sectionTop - 60) {
+                    current = section.getAttribute('id');
+                }
+            });
+            navLinksItems.forEach(link => {
+                link.classList.remove('active');
+                link.removeAttribute('aria-current');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                    link.setAttribute('aria-current', 'page');
+                }
+            });
+        });
+
+        // Model Viewer controls
+        const modelViewer = document.querySelector('model-viewer');
+        const toggleRotateButton = document.getElementById('toggle-rotate');
+        const toggleLightingButton = document.getElementById('toggle-lighting');
+        const arError = document.getElementById('ar-error');
+
+        // Toggle auto-rotate
+        toggleRotateButton.addEventListener('click', () => {
+            const isRotating = modelViewer.hasAttribute('auto-rotate');
+            modelViewer.toggleAttribute('auto-rotate');
+            toggleRotateButton.textContent = isRotating ? 'Resume Rotation' : 'Pause Rotation';
+        });
+
+        // Toggle lighting
+        let lightingOn = true;
+        toggleLightingButton.addEventListener('click', () => {
+            lightingOn = !lightingOn;
+            modelViewer.setAttribute('environment-image', lightingOn ? 'neutral' : 'none');
+            modelViewer.setAttribute('shadow-intensity', lightingOn ? '1' : '0');
+            toggleLightingButton.textContent = lightingOn ? 'Toggle Lighting' : 'Enable Lighting';
+        });
+
+        // Handle AR errors
+        modelViewer.addEventListener('ar-status', (event) => {
+            if (event.detail.status === 'failed') {
+                arError.classList.remove('hidden');
+                console.log('AR failed:', event.detail);
+            }
+        });
+
+        // Track AR button clicks
+        modelViewer.addEventListener('ar-button-clicked', () => {
+            console.log('AR button clicked');
+        });
+
+        // Update progress bar
+        modelViewer.addEventListener('progress', (event) => {
+            const progress = event.detail.totalProgress;
+            const progressBar = modelViewer.querySelector('.progress-bar');
+            progressBar.style.width = `${progress * 100}%`;
+        });
+
+        // Log model load
+        modelViewer.addEventListener('load', () => {
+            console.log('3D model loaded successfully');
+        });
+
+        // Scroll-triggered animations
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.feature-card, .kit-card');
+            elements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.85) {
+                    el.style.transform = 'scale(1)';
+                    el.style.opacity = '1';
+                }
+            });
+        };
+        window.addEventListener('scroll', animateOnScroll);
+        animateOnScroll();
+
+        // Keyboard accessibility for model controls
+        toggleRotateButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleRotateButton.click();
+            }
+        });
+        toggleLightingButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleLightingButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
